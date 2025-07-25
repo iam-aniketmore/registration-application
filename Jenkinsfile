@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent none
 
     tools {
         maven 'mvn'   // Make sure 'mvn' is defined under Jenkins -> Global Tool Configuration
@@ -18,6 +18,7 @@ pipeline {
         }
 
         stage('Build') {
+            agent{ label 'mvn'}
             steps {
                 sh 'mvn clean install'
             }
@@ -25,6 +26,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
+                agent { label 'docker' }
                 sh 'rm -rf $IMAGE_NAME || true'
                 sh 'docker build -t $IMAGE_NAME .'
             }
@@ -32,6 +34,7 @@ pipeline {
 
         stage('Run Container') {
             steps {
+                agent { label 'docker' }
                 sh "docker rm -f $CONTAINER_NAME || true"
                 sh "docker run -dt --name $CONTAINER_NAME -p 8082:8080 $IMAGE_NAME"
             }
