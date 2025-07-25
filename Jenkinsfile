@@ -19,7 +19,7 @@ pipeline {
         }
 
         stage('Build') {
-            agent{ label 'mvn'}
+            agent { label 'docker' }
             steps {
                 sh 'mvn clean install'
             }
