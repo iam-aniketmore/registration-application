@@ -1,5 +1,5 @@
 pipeline {
-    agent none
+    agent any
 
     tools {
         maven 'mvn'   // Make sure 'mvn' is defined under Jenkins -> Global Tool Configuration
@@ -12,7 +12,6 @@ pipeline {
 
     stages {
         stage('Checkout') {
-            agent any
             steps {
                 git branch: 'main', url: 'https://github.com/iam-aniketmore/registration-application.git'
             }
