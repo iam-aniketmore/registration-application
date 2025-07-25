@@ -12,6 +12,7 @@ pipeline {
 
     stages {
         stage('Checkout') {
+            agent any
             steps {
                 git branch: 'main', url: 'https://github.com/iam-aniketmore/registration-application.git'
             }
