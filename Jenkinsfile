@@ -85,8 +85,19 @@ pipeline{
         }
     }
     post {
-        always {
-            echo "Pipeline complete for ${params.APP_NAME}"
-        }
+    success {
+      emailext(
+        subject: "✅ Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+        body: "Build succeeded! Details: ${env.BUILD_URL}",
+        to: 'team@example.com'
+      )
     }
+    failure {
+      emailext(
+        subject: "❌ Failure: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+        body: "Build failed. Check console: ${env.BUILD_URL}",
+        to: 'team@example.com'
+      )
+    }
+  }
 }
