@@ -79,7 +79,7 @@ pipeline{
                     def cname = "${params.APP_NAME}-${env}"
                     sh "docker build -t ${IMAGE_NAME}:${env} ."
                     sh "docker rm -f ${cname} || true"
-                    sh "docker run -dt --name ${cname} -p ${port}:8080 ${IMAGE_NAME}:${env}"
+                    sh "docke run -dt --name ${cname} -p ${port}:8080 ${IMAGE_NAME}:${env}"
                 }
             }
         }
