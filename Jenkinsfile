@@ -1,57 +1,92 @@
-pipeline {
+pipeline{
     agent any
-
-    tools {
-        maven 'mvn'   // Make sure 'mvn' is defined under Jenkins -> Global Tool Configuration
+    tools{
+        maven 'mvn'
     }
 
-    environment {
-        IMAGE_NAME = "my-image2"
-        CONTAINER_NAME = "my-container2"
+    parameters{
+        string(name: 'APP_NAME', defaultValue: 'my-app', description: 'Appliction Name')
+        booleanParam(name: 'DEPLOY', defaultValue: true, description: 'Should we deploy?')
     }
 
-    stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/iam-aniketmore/registration-application.git'
+    environment{
+        IMAGE_NAME = 'my-image'
+        REPO_URL = 'https://github.com/iam-aniketmore/registration-application.git'
+        BRANCH = 'main'
+    }
+
+    stages{
+        stage(checkout code){
+            steps{
+                git branch: "${env.BRANCH}", url: "${env.REPO_URL}"
             }
         }
 
-        stage('Build') {
-            agent { label 'docker' }
+        stage('Build App') {
             steps {
                 sh 'mvn clean install'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Deploy to Dev Stage') {
+            when {
+                expression { return params.DEPLOY }
+            }
             steps {
-                agent { label 'docker' }
-                sh 'rm -rf $IMAGE_NAME || true'
-                sh 'docker build -t $IMAGE_NAME .'
+                script {
+                    def port = '8081'
+                    def env = 'dev'
+                    def cname = "${params.APP_NAME}-${env}"
+                    sh "docker build -t ${IMAGE_NAME}:${env} ."
+                    sh "docker rm -f ${cname} || true"
+                    sh "docker run -dt --name ${cname} -p ${port}:8080 ${IMAGE_NAME}:${env}"
+                }
             }
         }
 
-        stage('Run Container') {
+        stage('Deploy to QA Stage') {
+            when {
+                expression { return params.DEPLOY }
+            }
             steps {
-                agent { label 'docker' }
-                sh "docker rm -f $CONTAINER_NAME || true"
-                sh "docker run -dt --name $CONTAINER_NAME -p 8082:8080 $IMAGE_NAME"
+                script {
+                    def port = '8082'
+                    def env = 'qa'
+                    def cname = "${params.APP_NAME}-${env}"
+                    sh "docker build -t ${IMAGE_NAME}:${env} ."
+                    sh "docker rm -f ${cname} || true"
+                    sh "docker run -dt --name ${cname} -p ${port}:8080 ${IMAGE_NAME}:${env}"
+                }
+            }
+        }
+
+        stage('Approve for Production') {
+            steps {
+                timeout(time: 3, unit: 'MINUTES') {
+                    input message: "Do you approve deploying to PROD", ok: 'Yes, Deploy'
+                }
+            }
+        }
+
+        stage('Deploy to PROD Stage') {
+            when {
+                expression { return params.DEPLOY }
+            }
+            steps {
+                script {
+                    def port = '8083'
+                    def env = 'prod'
+                    def cname = "${params.APP_NAME}-${env}"
+                    sh "docker build -t ${IMAGE_NAME}:${env} ."
+                    sh "docker rm -f ${cname} || true"
+                    sh "docker run -dt --name ${cname} -p ${port}:8080 ${IMAGE_NAME}:${env}"
+                }
             }
         }
     }
-
     post {
-        success {
-            echo 'Pipeline completed successfully!'
-        }
-
-        failure {
-            echo 'Pipeline failed.'
-        }
-
         always {
-            echo 'Pipeline finished running (success or fail).'
+            echo "Pipeline complete for ${params.APP_NAME}"
         }
     }
 }
