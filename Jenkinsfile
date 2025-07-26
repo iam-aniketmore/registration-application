@@ -16,7 +16,7 @@ pipeline{
     }
 
     stages{
-        stage('checkout code'){
+        stage('checkout code FROM'){
             steps{
                 git branch: "${env.BRANCH}", url: "${env.REPO_URL}"
             }
